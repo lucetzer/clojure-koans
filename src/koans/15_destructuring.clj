@@ -8,37 +8,45 @@
 
 (meditations
   "Destructuring is an arbiter: it breaks up arguments"
-  (= __ ((fn [[a b]] (str b a))
+  (= ":bar:foo" ((fn [[a b]] (str b a))
          [:foo :bar]))
 
   "Whether in function definitions"
   (= (str "An Oxford comma list of apples, "
           "oranges, "
           "and pears.")
-     ((fn [[a b c]] __)
+     ((fn [[a b c]] (str "An Oxford comma list of " a ", " b ", and " c "."))
       ["apples" "oranges" "pears"]))
 
   "Or in let expressions"
   (= "Rich Hickey aka The Clojurer aka Go Time aka Lambda Guru"
      (let [[first-name last-name & aliases]
            (list "Rich" "Hickey" "The Clojurer" "Go Time" "Lambda Guru")]
-       __))
+       (apply str (interpose " aka " (cons (str first-name " " last-name) aliases)))))
+
+  ;(str first-name " " last-name) => "Rich Hickney"
+  ;(cons (str first-name " " last-name) aliases)) will add the string to the rest of the list => ("Rich Hickey" "The Clojurer" "Go Time" "Lambda Guru")
+  ;interpose will insert the string " aka " between each string in the list => ("Rich Hickey" " aka " "hi" " aka " "ho" " aka " "The Clojurer" " aka " "Go Time" " aka " "Lambda Guru")
+  ;apply str will put the above as an argument into the str function and it concatenates all the characters together into a new string
 
   "You can regain the full argument if you like arguing"
   (= {:original-parts ["Stephen" "Hawking"] :named-parts {:first "Stephen" :last "Hawking"}}
      (let [[first-name last-name :as full-name] ["Stephen" "Hawking"]]
-       __))
+       (hash-map :original-parts full-name :named-parts (hash-map :first first-name :last last-name))))
 
   "Break up maps by key"
   (= "123 Test Lane, Testerville, TX"
      (let [{street-address :street-address, city :city, state :state} test-address]
-       __))
+       (apply str (interpose ", " (list street-address city state)))))
 
   "Or more succinctly"
   (= "123 Test Lane, Testerville, TX"
-     (let [{:keys [street-address __ __]} test-address]
-       __))
+     (let [{:keys [street-address city state]} test-address]
+       (apply str (interpose ", " (list street-address city state)))))
 
   "All together now!"
   (= "Test Testerson, 123 Test Lane, Testerville, TX"
-     (___ ["Test" "Testerson"] test-address)))
+     ((fn[[a b] {:keys [street-address city state]}]
+        (apply str (interpose ", " (list (str a " " b) street-address city state))))
+       ["Test" "Testerson"] test-address)))
+;first get the keys and then apply the string
